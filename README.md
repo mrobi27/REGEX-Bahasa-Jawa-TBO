@@ -60,81 +60,61 @@ TBO/
 
 atau di Windows:
 
-```bash
+bash
 dir
-```
 
-### 3. Install Dependency
+3. Install Dependency
 
-```bash
+bash
 pip install pandas openpyxl
-```
 
-### 4. Jalankan Program
+4. Jalankan Program
 
-```bash
+bash
 python translate.py
-```
 
----
+📝 Contoh Penggunaan
 
-## 📝 Contoh Penggunaan
+Input:
 
-**Input:**
-
-```
 aku mangan sega
-```
 
-**Output:**
+Output:
 
-```
 Subjek     : aku
 Predikat   : mangan
 Objek      : sega
 Keterangan :
 
 Kalimat VALID (struktur SPOK benar)
-```
 
----
+⚠️ Aturan Validasi
 
-## ⚠️ Aturan Validasi
+Input hanya boleh huruf, spasi, dan tanda `-`
+Kalimat harus memiliki Subjek dan Predikat
+Subjek harus muncul sebelum Predikat
 
-* Input hanya boleh huruf, spasi, dan tanda `-`
-* Kalimat harus memiliki Subjek dan Predikat
-* Subjek harus muncul sebelum Predikat
-
----
-
-## 🎓 Informasi Akademik
+🎓 Informasi Akademik
 
 * Mata Kuliah : Teori Bahasa dan Otomata
 * Dosen Pengampu : Ali Sofyan Kholimi, S.Kom., M.Kom.
 * Program Studi : Informatika
 * Universitas : Universitas Muhammadiyah Malang
 
----
-
-## 👨‍💻 Penulis
+👨‍💻 Penulis
 
 * Muhammad Robi Ardita (202410370110002)
+* Tegar Tutu Empar Pranata (202410370110008)
 * Farid Al Farizi (202410370110017)
 * Naufal Arkaan (202410370110020)
 
----
 
 📌 *Repository ini dibuat untuk keperluan tugas akademik dan pembelajaran.*
 
-````
-
----
-
-## ✅ LANGKAH TERAKHIR (WAJIB)
+✅ LANGKAH TERAKHIR (WAJIB)
 Setelah README rapi di VS Code:
 
-```bash
+bash
 git add README.md
 git commit -m "Update README for VS Code usage"
 git push origin main
-````
