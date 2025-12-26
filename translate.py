@@ -1,81 +1,122 @@
 import pandas as pd
-import re
 
+# =====================================================
+# LOAD DATASET (LEXICON / TERMINAL SYMBOLS)
+# =====================================================
 df = pd.read_excel("bahasa_jawa.xlsx")
 
-regex_kalimat = re.compile(r"^[a-zA-Z\s\-]+$")
+PRONOUN = set()
+VERB = set()
+NOUN = set()
+ADVERB = set()
 
-while True:
-    teks = input("\nMasukkan kalimat: ").strip().lower()
+# Determiner (boleh ditambah manual, aman secara CFG)
+DETERMINER = {"iki", "iku"}
 
-    if not regex_kalimat.fullmatch(teks):
-        print("Input tidak valid (hanya huruf, spasi, dan '-')")
-        lanjut = input("Lanjut? (y/n): ").lower()
-        if lanjut != "y":
-            break
-        continue
+# =====================================================
+# BUILD LEXICON DARI DATASET
+# =====================================================
+for _, row in df.iterrows():
+    fungsi = str(row["Fungsi (SPOK)"]).upper()
 
-    kata_list = teks.split()
-    print("\nINPUT VALID\n")
+    kata_set = set()
+    kata_set.update(str(row["Ngoko"]).lower().split("/"))
+    kata_set.update(str(row["Krama Madya"]).lower().split("/"))
+    kata_set.add(str(row["Bahasa Indonesia"]).lower())
 
-    S, P, O, K = [], [], [], []
+    if "S" in fungsi:
+        PRONOUN.update(kata_set)
+    if "P" in fungsi:
+        VERB.update(kata_set)
+    if "O" in fungsi:
+        NOUN.update(kata_set)
+    if "K" in fungsi:
+        ADVERB.update(kata_set)
 
-    for kata in kata_list:
-        ditemukan = False
+# =====================================================
+# CONTEXT FREE GRAMMAR (CFG)
+#
+# S   → NP VP
+# NP  → Pronoun | Noun | Det Noun
+# VP  → Verb
+# VP  → Verb NP
+# VP  → Verb Adv
+# VP  → Verb NP Adv
+# =====================================================
 
-        for _, row in df.iterrows():
-            ngoko = [k.strip().lower() for k in str(row["Ngoko"]).split("/")]
-            krama_madya = [k.strip().lower() for k in str(row["Krama Madya"]).split("/")]
-            indo = str(row["Bahasa Indonesia"]).lower()
-            fungsi = str(row["Fungsi (SPOK)"])
+def parse_sentence(words):
+    tree = []
+    index = 0
+    n = len(words)
 
-            if (
-                kata in ngoko
-                or kata in krama_madya
-                or kata == indo
-            ):
-                ditemukan = True
+    # ===== START SYMBOL =====
+    tree.append("S")
+    tree.append("├── NP")
 
-                if "S" in fungsi:
-                    S.append(kata)
-                if "P" in fungsi:
-                    P.append(kata)
-                if "O" in fungsi:
-                    O.append(kata)
-                if "K" in fungsi:
-                    K.append(kata)
-
-                print(f"  Kata    : {kata}")
-                print(f"  Ngoko   : {', '.join(ngoko)}")
-                print(f"  Krama   : {', '.join(krama_madya)}")
-                print(f"  Arti    : {indo}")
-                print(f"  Fungsi  : {fungsi}")
-                print()
-                break
-
-        if not ditemukan:
-            print(f"Kata '{kata}' tidak ada di dataset\n")
-
-    print("=== HASIL ANALISIS SPOK ===")
-    print("Subjek     :", " ".join(S))
-    print("Predikat   :", " ".join(P))
-    print("Objek      :", " ".join(O))
-    print("Keterangan :", " ".join(K))
-
-    print("\n=== HASIL VALIDASI KALIMAT ===")
-
-    if not S:
-        print("Kalimat TIDAK VALID: tidak ada Subjek (S)")
-    elif not P:
-        print("Kalimat TIDAK VALID: tidak ada Predikat (P)")
-    else:
-        posisi_S = min(kata_list.index(k) for k in S)
-        posisi_P = min(kata_list.index(k) for k in P)
-
-        if posisi_S < posisi_P:
-            print("Kalimat VALID (struktur SPOK benar)")
+    # ===== NP =====
+    if index < n and words[index] in DETERMINER:
+        tree.append(f"│   ├── Det ({words[index]})")
+        index += 1
+        if index < n and words[index] in NOUN:
+            tree.append(f"│   └── Noun ({words[index]})")
+            index += 1
         else:
-            print("Kalimat TIDAK VALID: urutan SPOK salah")
+            return False, "❌ NP tidak lengkap (Det tanpa Noun)"
+
+    elif index < n and words[index] in PRONOUN:
+        tree.append(f"│   └── Pronoun ({words[index]})")
+        index += 1
+
+    elif index < n and words[index] in NOUN:
+        tree.append(f"│   └── Noun ({words[index]})")
+        index += 1
+
+    else:
+        return False, "❌ NP (Subjek) tidak ditemukan"
+
+    # ===== VP =====
+    tree.append("└── VP")
+
+    if index < n and words[index] in VERB:
+        tree.append(f"    ├── Verb ({words[index]})")
+        index += 1
+    else:
+        return False, "❌ Verb (Predikat) tidak ditemukan"
+
+    # ===== OPTIONAL NP (OBJ) =====
+    if index < n and words[index] in NOUN:
+        tree.append("    ├── NP")
+        tree.append(f"    │   └── Noun ({words[index]})")
+        index += 1
+
+    # ===== OPTIONAL ADV =====
+    if index < n and words[index] in ADVERB:
+        tree.append(f"    └── Adv ({words[index]})")
+        index += 1
+
+    # ===== FINAL CHECK =====
+    if index != n:
+        return False, "❌ Struktur tidak sesuai CFG"
+
+    return True, "\n".join(tree)
+
+# =====================================================
+# MAIN PROGRAM
+# =====================================================
+while True:
+    kalimat = input("\nMasukkan kalimat Bahasa Jawa: ").lower().strip()
+    words = kalimat.split()
+
+    valid, result = parse_sentence(words)
+
+    print("\n=== HASIL ANALISIS SINTAKS ===")
+    if valid:
+        print("Kalimat VALID berdasarkan Context Free Grammar (CFG)\n")
+        print("Parse Tree:")
+        print(result)
+    else:
+        print("Kalimat TIDAK VALID")
+        print(result)
 
     lanjut = input("\nLanjut? (y/n): ").lower()
     if lanjut != "y":
