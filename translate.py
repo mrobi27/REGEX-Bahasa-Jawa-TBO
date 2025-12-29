@@ -1,4 +1,4 @@
-import pandas as pd #library pandas
+import pandas as pd 
 
 # =====================================================
 # LOAD DATASET
@@ -80,6 +80,10 @@ def parse_sentence(words):
 
     else:
         return False, "❌ Kalimat tidak memiliki Subjek (NP)"
+    
+    # ===== KALIMAT NOMINAL (S → NP) =====
+    if index == n:
+        return True, "\n".join(tree)
 
     # ===== VP =====
     tree.append("└── VP")
