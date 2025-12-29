@@ -1,8 +1,5 @@
 import pandas as pd
 
-# =====================================================
-# LOAD DATASET (LEXICON / TERMINAL SYMBOLS)
-# =====================================================
 df = pd.read_excel("bahasa_jawa.xlsx")
 
 PRONOUN = set()
@@ -10,19 +7,26 @@ VERB = set()
 NOUN = set()
 ADVERB = set()
 
-# Determiner (boleh ditambah manual, aman secara CFG)
 DETERMINER = {"iki", "iku"}
 
+def split_safe(value):
+    if pd.isna(value):
+        return []
+    value = str(value).lower()
+    value = value.replace(",", "/")
+    return [k.strip() for k in value.split("/") if k.strip()]
+
 # =====================================================
-# BUILD LEXICON DARI DATASET
+# BUILD LEXICON
 # =====================================================
 for _, row in df.iterrows():
     fungsi = str(row["Fungsi (SPOK)"]).upper()
 
     kata_set = set()
-    kata_set.update(str(row["Ngoko"]).lower().split("/"))
-    kata_set.update(str(row["Krama Madya"]).lower().split("/"))
-    kata_set.add(str(row["Bahasa Indonesia"]).lower())
+    kata_set.update(split_safe(row["Ngoko"]))
+    kata_set.update(split_safe(row["Krama Madya"]))
+    kata_set.update(split_safe(row["Krama Inggil"]))
+    kata_set.update(split_safe(row["Bahasa Indonesia"]))
 
     if "S" in fungsi:
         PRONOUN.update(kata_set)
@@ -33,27 +37,20 @@ for _, row in df.iterrows():
     if "K" in fungsi:
         ADVERB.update(kata_set)
 
-# =====================================================
-# CONTEXT FREE GRAMMAR (CFG)
-#
-# S   → NP VP
-# NP  → Pronoun | Noun | Det Noun
-# VP  → Verb
-# VP  → Verb NP
-# VP  → Verb Adv
-# VP  → Verb NP Adv
-# =====================================================
+ALL_TERMINALS = PRONOUN | VERB | NOUN | ADVERB | DETERMINER
 
+# =====================================================
+# CONTEXT FREE GRAMMAR PARSER
+# =====================================================
 def parse_sentence(words):
     tree = []
     index = 0
     n = len(words)
 
-    # ===== START SYMBOL =====
     tree.append("S")
     tree.append("├── NP")
 
-    # ===== NP =====
+    # ===== NP (SUBJEK) =====
     if index < n and words[index] in DETERMINER:
         tree.append(f"│   ├── Det ({words[index]})")
         index += 1
@@ -61,7 +58,7 @@ def parse_sentence(words):
             tree.append(f"│   └── Noun ({words[index]})")
             index += 1
         else:
-            return False, "❌ NP tidak lengkap (Det tanpa Noun)"
+            return False, "❌ NP tidak lengkap: Determiner harus diikuti Noun"
 
     elif index < n and words[index] in PRONOUN:
         tree.append(f"│   └── Pronoun ({words[index]})")
@@ -72,7 +69,7 @@ def parse_sentence(words):
         index += 1
 
     else:
-        return False, "❌ NP (Subjek) tidak ditemukan"
+        return False, "❌ Kalimat tidak memiliki Subjek (NP)"
 
     # ===== VP =====
     tree.append("└── VP")
@@ -81,22 +78,29 @@ def parse_sentence(words):
         tree.append(f"    ├── Verb ({words[index]})")
         index += 1
     else:
-        return False, "❌ Verb (Predikat) tidak ditemukan"
+        return False, "❌ Kalimat tidak memiliki Predikat (Verb)"
 
-    # ===== OPTIONAL NP (OBJ) =====
+    # ===== VERB + NP (OBJEK) =====
     if index < n and words[index] in NOUN:
         tree.append("    ├── NP")
         tree.append(f"    │   └── Noun ({words[index]})")
         index += 1
 
-    # ===== OPTIONAL ADV =====
+        # Jika sudah habis → VALID
+        if index == n:
+            return True, "\n".join(tree)
+
+    # ===== VERB TAPI KURANG OBJEK =====
+    if index == n:
+        return False, "❌ Kalimat tidak lengkap: Predikat membutuhkan Objek (NP)"
+
+    # ===== VERB + ADV =====
     if index < n and words[index] in ADVERB:
         tree.append(f"    └── Adv ({words[index]})")
         index += 1
 
-    # ===== FINAL CHECK =====
     if index != n:
-        return False, "❌ Struktur tidak sesuai CFG"
+        return False, "❌ Struktur kalimat tidak sesuai CFG"
 
     return True, "\n".join(tree)
 
@@ -107,6 +111,20 @@ while True:
     kalimat = input("\nMasukkan kalimat Bahasa Jawa: ").lower().strip()
     words = kalimat.split()
 
+    unknown_words = [w for w in words if w not in ALL_TERMINALS]
+    if unknown_words:
+        print("\n❌ Kata tidak dikenal dalam dataset:")
+        for w in unknown_words:
+            print(f" - {w}")
+        print("Kalimat tidak diproses karena mengandung simbol di luar lexicon.")
+
+        lanjut = input("\nLanjut? (y/n): ").lower()
+        if lanjut != "y":
+            print("Program selesai.")
+            break
+        continue
+
+    # ===== PARSE CFG =====
     valid, result = parse_sentence(words)
 
     print("\n=== HASIL ANALISIS SINTAKS ===")
