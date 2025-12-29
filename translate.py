@@ -1,5 +1,8 @@
 import pandas as pd
 
+# =====================================================
+# LOAD DATASET
+# =====================================================
 df = pd.read_excel("bahasa_jawa.xlsx")
 
 PRONOUN = set()
@@ -9,6 +12,9 @@ ADVERB = set()
 
 DETERMINER = {"iki", "iku"}
 
+# =====================================================
+# SAFE SPLIT
+# =====================================================
 def split_safe(value):
     if pd.isna(value):
         return []
@@ -41,6 +47,10 @@ ALL_TERMINALS = PRONOUN | VERB | NOUN | ADVERB | DETERMINER
 
 # =====================================================
 # CONTEXT FREE GRAMMAR PARSER
+# CFG:
+# S  -> NP VP
+# NP -> Pronoun | Noun | Det Noun
+# VP -> Verb | Verb NP | Verb Adv | Verb NP Adv
 # =====================================================
 def parse_sentence(words):
     tree = []
@@ -75,34 +85,28 @@ def parse_sentence(words):
     tree.append("└── VP")
 
     if index < n and words[index] in VERB:
-        tree.append(f"    ├── Verb ({words[index]})")
+        tree.append(f"    └── Verb ({words[index]})")
         index += 1
     else:
         return False, "❌ Kalimat tidak memiliki Predikat (Verb)"
 
     # ===== VERB + NP (OBJEK) =====
     if index < n and words[index] in NOUN:
+        tree[-1] = f"    ├── Verb ({tree[-1].split('(')[1].rstrip(')')})"
         tree.append("    ├── NP")
         tree.append(f"    │   └── Noun ({words[index]})")
         index += 1
-
-        # Jika sudah habis → VALID
-        if index == n:
-            return True, "\n".join(tree)
-
-    # ===== VERB TAPI KURANG OBJEK =====
-    if index == n:
-        return False, "❌ Kalimat tidak lengkap: Predikat membutuhkan Objek (NP)"
 
     # ===== VERB + ADV =====
     if index < n and words[index] in ADVERB:
         tree.append(f"    └── Adv ({words[index]})")
         index += 1
 
-    if index != n:
-        return False, "❌ Struktur kalimat tidak sesuai CFG"
+    # ===== FINAL VALIDATION =====
+    if index == n:
+        return True, "\n".join(tree)
 
-    return True, "\n".join(tree)
+    return False, "❌ Struktur kalimat tidak sesuai CFG"
 
 # =====================================================
 # MAIN PROGRAM
@@ -124,7 +128,6 @@ while True:
             break
         continue
 
-    # ===== PARSE CFG =====
     valid, result = parse_sentence(words)
 
     print("\n=== HASIL ANALISIS SINTAKS ===")
