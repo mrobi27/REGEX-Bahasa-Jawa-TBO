@@ -1,8 +1,6 @@
-import pandas as pd 
+import pandas as pd
+import re
 
-# =====================================================
-# LOAD DATASET
-# =====================================================
 df = pd.read_excel("bahasa_jawa.xlsx")
 
 PRONOUN = set()
@@ -13,14 +11,14 @@ ADVERB = set()
 DETERMINER = {"iki", "iku"}
 
 # =====================================================
-# SAFE SPLIT
+# SAFE SPLIT (REGEX VERSION)
 # =====================================================
 def split_safe(value):
     if pd.isna(value):
         return []
     value = str(value).lower()
-    value = value.replace(",", "/")
-    return [k.strip() for k in value.split("/") if k.strip()]
+    value = re.sub(r"[,\s/]+", "/", value)
+    return re.findall(r"[a-z]+", value)
 
 # =====================================================
 # BUILD LEXICON
@@ -47,10 +45,6 @@ ALL_TERMINALS = PRONOUN | VERB | NOUN | ADVERB | DETERMINER
 
 # =====================================================
 # CONTEXT FREE GRAMMAR PARSER
-# CFG:
-# S  -> NP VP
-# NP -> Pronoun | Noun | Det Noun
-# VP -> Verb | Verb NP | Verb Adv | Verb NP Adv
 # =====================================================
 def parse_sentence(words):
     tree = []
@@ -60,7 +54,6 @@ def parse_sentence(words):
     tree.append("S")
     tree.append("├── NP")
 
-    # ===== NP (SUBJEK) =====
     if index < n and words[index] in DETERMINER:
         tree.append(f"│   ├── Det ({words[index]})")
         index += 1
@@ -68,7 +61,7 @@ def parse_sentence(words):
             tree.append(f"│   └── Noun ({words[index]})")
             index += 1
         else:
-            return False, "❌ NP tidak lengkap: Determiner harus diikuti Noun"
+            return False, "❌ NP tidak lengkap"
 
     elif index < n and words[index] in PRONOUN:
         tree.append(f"│   └── Pronoun ({words[index]})")
@@ -79,56 +72,50 @@ def parse_sentence(words):
         index += 1
 
     else:
-        return False, "❌ Kalimat tidak memiliki Subjek (NP)"
-    
-    # ===== KALIMAT NOMINAL (S → NP) =====
+        return False, "❌ Tidak ada Subjek"
+
     if index == n:
         return True, "\n".join(tree)
 
-    # ===== VP =====
     tree.append("└── VP")
 
     if index < n and words[index] in VERB:
         tree.append(f"    └── Verb ({words[index]})")
         index += 1
     else:
-        return False, "❌ Kalimat tidak memiliki Predikat (Verb)"
+        return False, "❌ Tidak ada Predikat"
 
-    # ===== VERB + NP (OBJEK) =====
     if index < n and words[index] in NOUN:
         tree[-1] = f"    ├── Verb ({tree[-1].split('(')[1].rstrip(')')})"
         tree.append("    ├── NP")
         tree.append(f"    │   └── Noun ({words[index]})")
         index += 1
 
-    # ===== VERB + ADV =====
     if index < n and words[index] in ADVERB:
         tree.append(f"    └── Adv ({words[index]})")
         index += 1
 
-    # ===== FINAL VALIDATION =====
     if index == n:
         return True, "\n".join(tree)
 
-    return False, "❌ Struktur kalimat tidak sesuai CFG"
+    return False, "❌ Struktur tidak sesuai CFG"
 
 # =====================================================
 # MAIN PROGRAM
 # =====================================================
 while True:
     kalimat = input("\nMasukkan kalimat Bahasa Jawa: ").lower().strip()
-    words = kalimat.split()
+
+    # REGEX TOKENIZER
+    words = re.findall(r"[a-z]+", kalimat)
 
     unknown_words = [w for w in words if w not in ALL_TERMINALS]
     if unknown_words:
-        print("\n❌ Kata tidak dikenal dalam dataset:")
+        print("\n❌ Kata tidak dikenal:")
         for w in unknown_words:
             print(f" - {w}")
-        print("Kalimat tidak diproses karena mengandung simbol di luar lexicon.")
-
         lanjut = input("\nLanjut? (y/n): ").lower()
         if lanjut != "y":
-            print("Program selesai.")
             break
         continue
 
@@ -136,14 +123,11 @@ while True:
 
     print("\n=== HASIL ANALISIS SINTAKS ===")
     if valid:
-        print("Kalimat VALID berdasarkan Context Free Grammar (CFG)\n")
-        print("Parse Tree:")
+        print("VALID (CFG)\n")
         print(result)
     else:
-        print("Kalimat TIDAK VALID")
+        print("TIDAK VALID")
         print(result)
 
-    lanjut = input("\nLanjut? (y/n): ").lower()
-    if lanjut != "y":
-        print("Program selesai.")
+    if input("\nLanjut? (y/n): ").lower() != "y":
         break
