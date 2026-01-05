@@ -52,6 +52,27 @@ def parse_sentence(words):
     n = len(words)
 
     tree.append("S")
+
+    # Aturan 3: S → VP (Kalimat Imperatif/Perintah)
+    if index < n and words[index] in VERB:
+        tree.append("└── VP")
+        tree.append(f"    └── Verb ({words[index]})")
+        index += 1
+
+        if index < n and words[index] in NOUN:
+            tree[-1] = f"    ├── Verb ({tree[-1].split('(')[1].rstrip(')')})"
+            tree.append("    ├── NP")
+            tree.append(f"    │   └── Noun ({words[index]})")
+            index += 1
+
+        if index < n and words[index] in ADVERB:
+            tree.append(f"    └── Adv ({words[index]})")
+            index += 1
+
+        if index == n:
+            return True, "\n".join(tree)
+        return False, "❌ Struktur tidak sesuai CFG"
+
     tree.append("├── NP")
 
     if index < n and words[index] in DETERMINER:
