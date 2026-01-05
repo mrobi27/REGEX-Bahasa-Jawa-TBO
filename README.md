@@ -44,6 +44,7 @@ Aturan Context Free Grammar (CFG) yang digunakan dalam program ini adalah sebaga
 ```
 S   → NP VP
 S   → NP
+S   → VP
 
 NP  → Pronoun
 NP  → Noun
