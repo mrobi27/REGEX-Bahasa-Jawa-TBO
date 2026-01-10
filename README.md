@@ -1,7 +1,7 @@
 # 🧠 Analisis Sintaks Bahasa Jawa Berbasis Context Free Grammar (CFG)
 
 Proyek ini merupakan implementasi konsep **Teori Bahasa dan Otomata** yang berfokus pada **analisis sintaks kalimat Bahasa Jawa** menggunakan pendekatan **Context Free Grammar (CFG)**.
-Program dirancang untuk memvalidasi **kalimat tunggal** berdasarkan aturan grammar yang dirumuskan secara formal serta menampilkan **parse tree** sebagai representasi struktur sintaks kalimat.
+Program dirancang untuk memvalidasi **kalimat tunggal Bahasa Jawa** berdasarkan aturan grammar formal serta menampilkan **parse tree** sebagai representasi struktur sintaks kalimat.
 
 ---
 
@@ -16,11 +16,11 @@ Program dirancang untuk memvalidasi **kalimat tunggal** berdasarkan aturan gramm
 
 ## 🎯 Tujuan
 
-Tujuan dari pengembangan program ini adalah:
+Tujuan pengembangan program ini adalah:
 
-1. Menerapkan konsep **Context Free Grammar (CFG)** pada analisis Bahasa Jawa.
-2. Menganalisis struktur kalimat secara **runut dari simbol awal (start symbol) hingga simbol terminal**.
-3. Menentukan **validitas sintaks kalimat** berdasarkan aturan grammar yang telah dirumuskan.
+1. Menerapkan konsep **Context Free Grammar (CFG)** pada analisis sintaks Bahasa Jawa.
+2. Menganalisis struktur kalimat secara **runut dari simbol awal (*start symbol*) hingga simbol terminal**.
+3. Menentukan **validitas sintaks kalimat** berdasarkan aturan grammar yang dirumuskan.
 4. Menampilkan **parse tree** sebagai representasi struktur hierarkis kalimat.
 
 ---
@@ -33,103 +33,88 @@ Program ini mengacu pada konsep utama dalam **Teori Bahasa dan Otomata**, khusus
 * Analisis sintaks (*syntax analysis*)
 * Representasi struktur kalimat menggunakan **parse tree**
 
-Dataset kosakata Bahasa Jawa digunakan **sebagai lexicon (simbol terminal)**, sedangkan **penentuan struktur kalimat sepenuhnya ditentukan oleh aturan CFG**, bukan oleh makna kata (semantik).
+Analisis dilakukan berdasarkan **fungsi sintaksis bahasa Jawa**, seperti **Subjek, Predikat, Objek, Pelengkap, dan Keterangan**, tanpa mempertimbangkan aspek makna (semantik).
 
 ---
 
 ## 📐 Aturan Grammar (CFG)
 
-Aturan Context Free Grammar (CFG) yang digunakan dalam program ini adalah sebagai berikut:
+Aturan **Context Free Grammar (CFG)** yang digunakan dalam program ini adalah sebagai berikut:
 
 ```
 S   → NP VP
-S   → NP
+S   → NP Adv VP
 S   → VP
 
-NP  → Pronoun
 NP  → Noun
-NP  → Det Noun
+NP  → Pronoun
+NP  → ProperNoun
 
 VP  → Verb
+VP  → Verb Verb
 VP  → Verb NP
-VP  → Verb Adv
-VP  → Verb NP Adv
+VP  → Verb NP NP
+VP  → VP K
+
+K   → Adv
+K   → Prep Noun
 ```
 
 ### Keterangan Non-Terminal
 
-* **S**   : Kalimat (Start Symbol)
-* **NP**  : Noun Phrase (Subjek / Objek)
-* **VP**  : Verb Phrase (Predikat)
-* **Det** : Determiner
-* **Adv** : Adverb (Keterangan)
+* **S**   : Kalimat (*Start Symbol*)
+* **NP**  : Frasa Nomina (Subjek / Objek / Pelengkap)
+* **VP**  : Frasa Verba (Predikat)
+* **K**   : Keterangan
+* **Adv** : Adverbia
+* **Prep**: Preposisi
 
-Grammar ini dirancang untuk mencerminkan struktur dasar kalimat Bahasa Jawa dengan pola **S–P–O–(K)**.
+Grammar ini dirancang untuk merepresentasikan struktur dasar kalimat Bahasa Jawa berdasarkan **fungsi sintaksis**, bukan pola linier SPOK semata.
 
 ---
 
-## 🗂️ Dataset
+## 🗂️ Leksikon (Lexicon)
 
-Dataset disimpan dalam file:
+Leksikon didefinisikan **secara eksplisit di dalam program** dan mencakup kategori kata berikut:
 
-```
-bahasa_jawa.xlsx
-```
+* **Noun**      : *buku, kalung, koran, asrama, perpustakaan*
+* **Pronoun**   : *aku, kowe, dheweke*
+* **Verb**      : *maca, sinau, nyilih, maringi, arep, manggon*
+* **Adverb**    : *lagi, wis*
+* **Preposition** : *neng, ing, menyang*
 
-### Kolom yang Digunakan
-
-* `Ngoko`
-* `Krama Madya`
-* `Krama Inggil`
-* `Bahasa Indonesia`
-* `Fungsi (SPOK)`
-
-### Peran Dataset
-
-* Dataset digunakan **hanya untuk membangun lexicon**, yaitu:
-
-  * `PRONOUN`
-  * `VERB`
-  * `NOUN`
-  * `ADVERB`
-* Dataset **tidak digunakan untuk menentukan struktur grammar**, sehingga analisis tetap murni berbasis CFG.
+Nama orang (**Proper Noun**) dikenali secara otomatis dari input.
 
 ---
 
 ## ⚙️ Cara Menjalankan Program
 
-### 1️⃣ Instal dependensi
+### 1️⃣ Jalankan program
 
 ```bash
-pip install pandas openpyxl
+python parser_jawa.py
 ```
 
-### 2️⃣ Jalankan program
-
-```bash
-python translate.py
-```
-
-### 3️⃣ Masukkan satu kalimat Bahasa Jawa
+### 2️⃣ Masukkan satu kalimat Bahasa Jawa
 
 Contoh input:
 
 ```
-aku adus banyu awan
+Anake lagi maca koran
 ```
 
 ---
 
 ## ✅ Contoh Kalimat Valid
 
-Berikut contoh kalimat yang **sesuai dengan CFG**:
+Berikut contoh kalimat yang **sesuai dengan aturan CFG**:
 
 ```
-aku adus
-aku adus banyu
-aku adus awan
-aku adus banyu awan
-iki banyu
+Rani nyilih buku
+Ibu maringi aku kalung
+Anake lagi maca koran
+Adhine sinau neng perpustakaan
+Dheweke arep manggon neng asrama
 ```
 
 ---
@@ -139,33 +124,34 @@ iki banyu
 Berikut contoh kalimat yang **melanggar aturan CFG**:
 
 ```
-aku banyu
 adus aku
-awan aku adus
+aku buku
+awan aku maca
 ```
 
 ---
 
 ## 🌳 Contoh Parse Tree
 
-Contoh hasil parse tree dari kalimat:
+Contoh hasil *parse tree* dari kalimat:
 
 ```
-aku adus banyu awan
+Anake lagi maca koran
 ```
 
 ```
 S
 ├── NP
-│   └── Pronoun (aku)
+│   └── N (anake)
+├── AdvP
+│   └── Adv (lagi)
 └── VP
-    ├── Verb (adus)
-    ├── NP
-    │   └── Noun (banyu)
-    └── Adv (awan)
+    ├── V (maca)
+    └── NP
+        └── N (koran)
 ```
 
-Parse tree menunjukkan bahwa kalimat dapat diturunkan dari simbol awal `S` hingga simbol terminal sesuai aturan CFG.
+*Parse tree* menunjukkan bahwa kalimat dapat diturunkan dari simbol awal **S** hingga simbol terminal sesuai aturan CFG.
 
 ---
 
@@ -173,20 +159,20 @@ Parse tree menunjukkan bahwa kalimat dapat diturunkan dari simbol awal `S` hingg
 
 Sebuah kalimat dinyatakan:
 
-* **VALID**, jika dapat diturunkan dari simbol awal `S` menggunakan aturan CFG dan menghasilkan parse tree yang sesuai.
+* **VALID**, jika dapat diturunkan dari simbol awal **S** menggunakan aturan CFG dan menghasilkan *parse tree* yang sesuai.
 * **TIDAK VALID**, jika melanggar aturan grammar, seperti:
 
-  * Tidak memiliki predikat (Verb)
   * Urutan kata tidak sesuai
   * Struktur frasa tidak lengkap
+  * Predikat tidak ditemukan
 
 ---
 
 ## 📝 Catatan Penting
 
-* Program ini dirancang untuk **satu kalimat tunggal per input**, sesuai konsep dasar CFG.
-* Untuk menganalisis lebih dari satu kalimat, proses parsing dilakukan **secara terpisah**.
-* Program ini **tidak membahas kalimat majemuk maupun analisis semantik**.
+* Program ini dirancang untuk **satu kalimat tunggal per input**.
+* Analisis dilakukan **murni pada aspek sintaksis**, bukan semantik.
+* Program **tidak mendukung kalimat majemuk**.
 
 ---
 
@@ -198,9 +184,9 @@ Proyek ini dibuat sebagai pemenuhan tugas mata kuliah:
 
 dengan fokus pada:
 
-* Perumusan aturan CFG
+* Perumusan aturan **CFG**
 * Analisis sintaks runut
-* Representasi parse tree
-* Penentuan validitas kalimat
+* Representasi *parse tree*
+* Penentuan validitas kalimat secara formal
 
-
+---
